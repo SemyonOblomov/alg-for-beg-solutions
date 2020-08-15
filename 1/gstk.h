@@ -34,6 +34,9 @@ gstk_isempty(struct gstk_t *gstk);
 size_t
 gstk_len(struct gstk_t *gstk);
 
+void
+gstk_clear(struct gstk_t *gstk);
+
 /* Type settings */
 size_t
 gstk_default_size(void);

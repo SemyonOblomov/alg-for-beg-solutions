@@ -36,6 +36,7 @@ stack_stock_span(int *quotes, size_t n)
 {
     int *spans;
     struct stk_t *stk;
+	type_t dest;
     enum STK_ERROR errsv;
 
     if (n == 0 || quotes == NULL)
@@ -51,18 +52,19 @@ stack_stock_span(int *quotes, size_t n)
         return NULL;
     }
 
-    errsv = STKE_OK;
     spans[0] = 1;
-    stk_push(stk, 0, &errsv);
+    errsv = stk_push(stk, 0);
     assert(errsv == STKE_OK);
 
     for (int i = 1; i < n; ++i) {
-        while (!stk_isempty(stk) && quotes[stk_top(stk, &errsv)] <= quotes[i])
-            stk_pop(stk, &errsv);
+        while (!stk_isempty(stk) &&
+			   quotes[stk_top(stk, &dest), dest] <= quotes[i])
+            stk_pop(stk, NULL);
 
-        spans[i] = ((stk_isempty(stk)) ? (i + 1) : (i - stk_top(stk, &errsv)));
+		spans[i] = ((stk_isempty(stk)) ? (i + 1) :
+					(i - (stk_top(stk, &dest), dest)));
 
-        stk_push(stk, i, &errsv);
+        errsv = stk_push(stk, i);
         assert(errsv == STKE_OK);
     }
     
@@ -169,10 +171,14 @@ istack_stock_span(int *quotes, size_t n)
     assert(errsv == ISTKE_OK);
 
     for (int i = 1; i < n; ++i) {
-        while (!istk_isempty(istk) && quotes[istk_top(istk, &errsv)] <= quotes[i])
+        while (!istk_isempty(istk) &&
+		       quotes[istk_top(istk, &errsv)] <= quotes[i])
             istk_pop(istk, &errsv);
 
-        spans[i] = ((istk_isempty(istk)) ? (i + 1) : (i - istk_top(istk, &errsv)));
+		if (istk_isempty(istk))
+			spans[i] = i + 1;
+		else
+			spans[i] = i - istk_top(istk, &errsv);
 
         istk_push(istk, i, &errsv);
         assert(errsv == ISTKE_OK);
@@ -189,7 +195,7 @@ gstack_stock_span(int *quotes, size_t n)
     int *spans;
     struct gstk_t *gstk;
     enum GSTK_ERROR errsv;
-    int tmp;
+    int dest;
 
     if (n == 0 || quotes == NULL)
         return NULL;
@@ -206,15 +212,18 @@ gstack_stock_span(int *quotes, size_t n)
 
     errsv = GSTKE_OK;
     spans[0] = 1;
-    tmp = 0;
-    errsv = gstk_push(gstk, &tmp);
+    dest = 0;
+    errsv = gstk_push(gstk, &dest);
     assert(errsv == GSTKE_OK);
 
     for (int i = 1; i < n; ++i) {
-        while (!gstk_isempty(gstk) && quotes[gstk_top(gstk, (void *) &tmp), tmp] <= quotes[i])
-            gstk_pop(gstk, (void *) &tmp);
+        while (!gstk_isempty(gstk) &&
+			   quotes[gstk_top(gstk, (void *) &dest), dest] <= quotes[i])
+            gstk_pop(gstk, NULL);
 
-        spans[i] = ((gstk_isempty(gstk)) ? (i + 1) : (i - (gstk_top(gstk, (void *) &tmp), tmp)));
+		
+		spans[i] = ((gstk_isempty(gstk)) ? (i + 1) :
+					(i - (gstk_top(gstk, (void *) &dest), dest)));
 
         errsv = gstk_push(gstk, (void *) &i);
         assert(errsv == GSTKE_OK);
@@ -292,19 +301,24 @@ main(int argc, char *argv[])
     for (int i = 0; i < n_up; ++i)
         quotes_up[i] = i;
 
-    TIMEIT("simple_spans down-up 100000", simple_spans = simple_stock_span(quotes_up, n_up));
+    TIMEIT("simple_spans down-up 100000",
+		   simple_spans = simple_stock_span(quotes_up, n_up));
     assert(simple_spans != NULL);
 
-    TIMEIT("stack_spans down-up 100000", stack_spans = stack_stock_span(quotes_up, n_up));
+    TIMEIT("stack_spans down-up 100000",
+		   stack_spans = stack_stock_span(quotes_up, n_up));
     assert(stack_spans != NULL);
 
-    TIMEIT("mstack_spans down-up 100000", mstack_spans = mstack_stock_span(quotes_up, n_up));
+    TIMEIT("mstack_spans down-up 100000",
+		   mstack_spans = mstack_stock_span(quotes_up, n_up));
     assert(mstack_spans != NULL);
 
-    TIMEIT("istack_spans down-up 100000", istack_spans = istack_stock_span(quotes_up, n_up));
+    TIMEIT("istack_spans down-up 100000",
+		   istack_spans = istack_stock_span(quotes_up, n_up));
     assert(istack_spans != NULL);
 
-    TIMEIT("gstack_spans down-up 100000", gstack_spans = gstack_stock_span(quotes_up, n_up));
+    TIMEIT("gstack_spans down-up 100000",
+		   gstack_spans = gstack_stock_span(quotes_up, n_up));
     assert(gstack_spans != NULL);
 
     assert(spans_cmp(stack_spans, simple_spans, n_up) == -1);
@@ -324,19 +338,24 @@ main(int argc, char *argv[])
     for (int i = n_up; i > 0; --i)
         quotes_up[abs(i-n_up)] = i;
 
-    TIMEIT("simple_spans up-down 100000", simple_spans = simple_stock_span(quotes_up, n_up));
+    TIMEIT("simple_spans up-down 100000",
+		   simple_spans = simple_stock_span(quotes_up, n_up));
     assert(simple_spans != NULL);
 
-    TIMEIT("stack_spans up-down 100000", stack_spans = stack_stock_span(quotes_up, n_up));
+    TIMEIT("stack_spans up-down 100000",
+		   stack_spans = stack_stock_span(quotes_up, n_up));
     assert(stack_spans != NULL);
 
-    TIMEIT("mstack_spans up-down 100000", mstack_spans = mstack_stock_span(quotes_up, n_up));
+    TIMEIT("mstack_spans up-down 100000",
+		   mstack_spans = mstack_stock_span(quotes_up, n_up));
     assert(mstack_spans != NULL);
     
-    TIMEIT("istack_spans down-up 100000", istack_spans = istack_stock_span(quotes_up, n_up));
+    TIMEIT("istack_spans down-up 100000",
+		   istack_spans = istack_stock_span(quotes_up, n_up));
     assert(istack_spans != NULL);
 
-    TIMEIT("gstack_spans down-up 100000", gstack_spans = gstack_stock_span(quotes_up, n_up));
+    TIMEIT("gstack_spans down-up 100000",
+		   gstack_spans = gstack_stock_span(quotes_up, n_up));
     assert(gstack_spans != NULL);
 
     assert(spans_cmp(stack_spans, simple_spans, n_up) == -1);
@@ -355,7 +374,7 @@ main(int argc, char *argv[])
     /* Random */
     srand(time(NULL));
     const unsigned test_times = 50;
-    const int      range = 100;
+    const int      range = 100; /* smaller range = wore simple_stock */
 
     TIMEITN_FULL(
         "simple_spans random",

@@ -72,7 +72,7 @@ gstk_push(struct gstk_t *gstk, void *src)
         gstk->data = tmp;
     }
 
-    memmove(GET_I(gstk, gstk->cur), el, gstk->el_size);
+    memmove(GET_I(gstk, gstk->cur), src, gstk->el_size);
     ++gstk->cur;
 
     return GSTKE_OK;
@@ -87,7 +87,8 @@ gstk_pop(struct gstk_t *gstk, void *dest)
         return GSTKE_EMPTY;
 
     --gstk->cur;
-    memmove(dest, GET_I(gstk, gstk->cur), gstk->el_size);
+	if (dest != NULL)
+		memmove(dest, GET_I(gstk, gstk->cur), gstk->el_size);
 
     return GSTKE_OK;
 }
@@ -95,7 +96,7 @@ gstk_pop(struct gstk_t *gstk, void *dest)
 enum GSTK_ERROR
 gstk_top(struct gstk_t *gstk, void *dest)
 {
-    assert(gstk != NULL);
+    assert(gstk != NULL && dest != NULL);
 
     if (gstk->cur == 0)
         return GSTKE_EMPTY;
@@ -119,6 +120,14 @@ gstk_len(struct gstk_t *gstk)
     assert(gstk != NULL);
 
     return gstk->cur;
+}
+
+void
+gstk_clear(struct gstk_t *gstk)
+{
+	assert(gstk != NULL);
+	
+	gstk->cur = 0;
 }
 
 /* Globals get/set */
@@ -149,4 +158,58 @@ gstk_set_multiplier(unsigned new_val)
 
     multiplier = new_val;
 }
+
+#ifdef GSTK_DEBUG
+#include <stdio.h>
+
+int
+main(int argc, char *argv[])
+{
+    enum GSTK_ERROR errsv;
+    size_t i;
+	int dest;
+    struct gstk_t *gstk;
+
+    gstk = gstk_create(0, sizeof(i));
+    puts("Zero state tests:");
+    assert(gstk != NULL);
+    assert(gstk->max == default_size);
+    assert(gstk_len(gstk) == 0);
+    assert(gstk_isempty(gstk));
+    puts("Successfull");
+
+    puts("Stack push tests:");
+    for (i = 0; i < gstk_default_size(); ++i) {
+        errsv = gstk_push(gstk, (void *) &i);
+        assert(errsv == GSTKE_OK);
+    }
+
+    assert(gstk_len(gstk) == gstk->max);
+    assert(!gstk_isempty(gstk));
+	dest = 42;
+	++i;
+    errsv = gstk_push(gstk, (void *) &dest); 
+    assert(errsv == GSTKE_OK);
+	assert(gstk->max == (default_size * multiplier));
+    puts("Successfull");
+
+    puts("Stack pop/top tests:");
+    while (i-- > 0) {
+        errsv = gstk_top(gstk, (void *) &dest);
+        assert(errsv == GSTKE_OK);
+        errsv = gstk_pop(gstk, NULL);
+        assert(errsv == GSTKE_OK);
+    }
+
+    errsv = gstk_top(gstk, (void *) &dest);
+    assert(errsv == GSTKE_EMPTY);
+    errsv = gstk_pop(gstk, NULL);
+    assert(errsv == GSTKE_EMPTY);
+    assert(gstk_len(gstk) == 0);
+    assert(gstk_isempty(gstk));
+    puts("Successfull");
+
+    exit(EXIT_SUCCESS);
+}
+#endif
 

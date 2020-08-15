@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 /* Types */
-struct stk_h;
+struct stk_t;
 
 enum STK_ERROR {
     STKE_OK = 0,
@@ -22,13 +22,13 @@ void
 stk_free(struct stk_t *stk);
 
 enum STK_ERROR
-stk_push(struct stk_t *stk, type_t el, enum STK_ERROR *errsv);
+stk_push(struct stk_t *stk, type_t src);
 
 enum STK_ERROR
-stk_pop(struct stk_t *stk, enum STK_ERROR *errsv);
+stk_pop(struct stk_t *stk, type_t *dest);
 
 enum STK_ERROR
-stk_top(struct stk_t *stk, enum STK_ERROR *errsv);
+stk_top(struct stk_t *stk, type_t *dest);
 
 bool
 stk_isempty(struct stk_t *stk);
@@ -39,15 +39,12 @@ stk_len(struct stk_t *stk);
 size_t
 stk_max(struct stk_t *stk);
 
+void
+stk_clear(struct stk_t *stk);
+
 /* Type settings */
 size_t
 stk_default_size(void);
-
-unsigned
-stk_multiplier(void);
-
-void
-stk_set_multiplier(unsigned new_val);
 
 void
 stk_set_default_size(size_t new_val);

@@ -5,7 +5,7 @@
 
 /* Types */
 struct stk_t {
-    size_t current;
+    size_t cur;
     size_t max;
     type_t *data;
 };
@@ -32,7 +32,7 @@ stk_create(size_t max_size)
         return NULL;
     }
 
-    stk->current = 0;
+    stk->cur = 0;
     stk->max = max_size;
 
     return stk;
@@ -52,12 +52,12 @@ stk_push(struct stk_t *stk, type_t src)
 {
     assert(stk != NULL); 
 
-    if (stk->current == stk->max)
+    if (stk->cur == stk->max)
         return STKE_OVERFLOW;
 
-    stk->data[stk->current++] = src;
+    stk->data[stk->cur++] = src;
 
-    return stk;
+    return STKE_OK;
 }
 
 enum STK_ERROR
@@ -65,25 +65,27 @@ stk_pop(struct stk_t *stk, type_t *dest)
 {
     assert(stk != NULL);
 
-    if (stk->current == 0) {
-        *errsv = STKE_UNDERFLOW;
-        return stk->data[0];
-    }
+    if (stk->cur == 0)
+		return STKE_EMPTY;
 
-    return stk->data[--stk->current];
+	--stk->cur;
+	if (dest != NULL)
+		*dest = stk->data[stk->cur];
+	
+    return STKE_OK;
 }
 
-type_t
-stk_top(struct stk_t *stk, enum STK_ERROR *errsv)
+enum STK_ERROR
+stk_top(struct stk_t *stk, type_t *dest)
 {
-    assert(stk != NULL);
+    assert(stk != NULL && dest != NULL);
 
-    if (stk->current == 0) {
-        *errsv = STKE_UNDERFLOW;
-        return stk->data[0];
-    }
+    if (stk->cur == 0)
+		return STKE_EMPTY;
+	
+	*dest = stk->data[stk->cur-1];
 
-    return stk->data[stk->current-1];
+    return STKE_OK;
 }
 
 bool
@@ -91,7 +93,7 @@ stk_isempty(struct stk_t *stk)
 {
     assert(stk != NULL);
 
-    return stk->current == 0;
+    return stk->cur == 0;
 }
 
 size_t
@@ -99,7 +101,7 @@ stk_len(struct stk_t *stk)
 {
     assert(stk != NULL);
 
-    return stk->current;
+    return stk->cur;
 }
 
 size_t
@@ -110,7 +112,15 @@ stk_max(struct stk_t *stk)
     return stk->max;
 }
 
-/* Globals setters */
+void
+stk_clear(struct stk_t *stk)
+{
+	assert(stk != NULL);
+
+	stk->cur = 0;
+}
+
+/* Globals get/set */
 size_t
 stk_default_size(void)
 {
@@ -136,49 +146,44 @@ get_type_t(void)
 int
 main(int argc, char *argv[])
 {
-    struct stk_t *stk;
     enum STK_ERROR errsv;
     size_t i;
+	type_t dest;
+    struct stk_t *stk;
 
     stk = stk_create(0);
     puts("Zero state tests:");
     assert(stk != NULL);
-    assert(stk_max(stk) == STK_DEFSIZE);
+    assert(stk_max(stk) == default_size);
     assert(stk_len(stk) == 0);
     assert(stk_isempty(stk));
     puts("Successfull");
 
     puts("Stack push tests:");
-    errsv = STKE_OK;
     for (i = 0; i < stk_max(stk); ++i) {
-        stk_push(stk, (type_t) i, &errsv);
+        errsv = stk_push(stk, (type_t) i);
         assert(errsv == STKE_OK);
     }
 
     assert(stk_len(stk) == stk_max(stk));
     assert(!stk_isempty(stk));
-    stk_push(stk, get_type_t(), &errsv);
+    errsv = stk_push(stk, get_type_t());
     assert(errsv == STKE_OVERFLOW);
-    errsv = STKE_OK;
     puts("Successfull");
 
     puts("Stack pop/top tests:");
     while (i-- > 0) {
-        stk_top(stk, &errsv);
+        errsv = stk_top(stk, &dest);
         assert(errsv == STKE_OK);
-        stk_pop(stk, &errsv);
+        errsv = stk_pop(stk, NULL);
         assert(errsv == STKE_OK);
     }
 
-    stk_top(stk, &errsv);
-    assert(errsv == STKE_UNDERFLOW);
-    errsv = STKE_OK;
-    stk_pop(stk, &errsv);
-    assert(errsv == STKE_UNDERFLOW);
-    errsv = STKE_OK;
-    stk_top(stk, &errsv);
-    assert(errsv == STKE_UNDERFLOW);
-    assert(stk_max(stk) == STK_DEFSIZE);
+    errsv = stk_top(stk, &dest);
+    assert(errsv == STKE_EMPTY);
+    errsv = stk_pop(stk, NULL);
+    assert(errsv == STKE_EMPTY);
+    assert(stk_max(stk) == default_size);
     assert(stk_len(stk) == 0);
     assert(stk_isempty(stk));
     puts("Successfull");
