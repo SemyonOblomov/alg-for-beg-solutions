@@ -276,6 +276,7 @@ main(int argc, char *argv[])
 		}
 		gstk_clear(stack);
 	}
+	gstk_free(stack);
 
 	exit(EXIT_SUCCESS);
 }
